@@ -1,14 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "./components/Header";
 import TodoForm from "./components/TodoForm";
 import { Pencil, Trash2 } from "lucide-react";
 
 const App = () => {
   const [task, setTask] = useState("");
-  const [todos, setTodos] = useState([]);
+  const [todos, setTodos] = useState(() => {
+    const savedTodos = localStorage.getItem("todos");
+    return savedTodos ? JSON.parse(savedTodos) : [];
+  });
   const [editingId, setEditingId] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
-  
+  const [filter, setFilter] = useState("all");
+
+ 
+  //when the todos state changes, it will save the updated list of todos to local storage. This way, any changes you make to your tasks (adding, editing, completing, or deleting) will be saved and persist across browser sessions.
+useEffect(() => {
+    localStorage.setItem("todos", JSON.stringify(todos));
+  }, [todos]);
+
   // CREATE & UPDATE
   const handleCreateTask = (e) => {
     e.preventDefault();
@@ -56,6 +66,11 @@ const App = () => {
 
   // DELETE
   const handleDelete = (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this task?"
+    );
+    if (!confirmDelete) return;
+
     setTodos(todos.filter((todo) => todo.id !== id));
   };
 
@@ -75,7 +90,12 @@ const App = () => {
   const handleToggleTheme = () => {
     setDarkMode(!darkMode);
   };
-
+// FILTER
+  const filteredTodos = todos.filter((todo) => {
+    if (filter === "completed") return todo.completed;
+    if (filter === "incomplete") return !todo.completed;
+    return true; // for "all" filter
+  });
   return (
     <div
       className={`min-h-screen px-4 py-10 transition-colors duration-300 ${
@@ -99,7 +119,40 @@ const App = () => {
           handleCancelEdit={handleCancelEdit}
           darkMode={darkMode}
         />
+        <div className="flex justify-center gap-3 mb-6">
+            <button
+              onClick={() => setFilter("all")}
+              className={`px-4 py-2 rounded-lg ${
+                filter === "all"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-300 text-black"
+              }`}
+            >
+              All
+            </button>
 
+            <button
+              onClick={() => setFilter("incomplete")}
+              className={`px-4 py-2 rounded-lg ${
+                filter === "incomplete"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-300 text-black"
+              }`}
+            >
+              Active
+            </button>
+
+            <button
+              onClick={() => setFilter("completed")}
+              className={`px-4 py-2 rounded-lg ${
+                filter === "completed"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-300 text-black"
+              }`}
+            >
+              Completed
+            </button>
+          </div>
         {todos.length === 0 ? (
           <p
             className={`text-center ${
@@ -113,7 +166,7 @@ const App = () => {
         ) : (
           <ul className="flex flex-col gap-3">
 
-            {todos.map((todo) => (
+            {filteredTodos.map((todo) => (
 
               <li
                 key={todo.id}
